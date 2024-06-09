@@ -159,7 +159,8 @@ func (s *SailManager) processAgents() error {
 		Content: fmt.Sprintf("%s\n%s", activeAgent.ConstructCaptainPrompt(s.agents), "Current Task: "+s.task),
 	})
 
-	color.Red(fmt.Sprintf("Role: %s\nContent: %s\n\n", activeAgent.Role, activeAgent.Context.Context[0].Content))
+	//color.Red(fmt.Sprintf("Role: %s\nContent: %s\n\n", activeAgent.Role, activeAgent.Context.Context[0].Content))
+	zap.L().Info("sail process started", zap.String("agent", activeAgent.Role), zap.String("task", s.task))
 
 	for i := 0; i < 5; i++ {
 
@@ -179,7 +180,7 @@ func (s *SailManager) processAgents() error {
 
 		completionStrings := strings.Split(completion, "\n")
 
-		color.Yellow(fmt.Sprintf("Response:\n%s\n", completion))
+		//color.Yellow(fmt.Sprintf("Response:\n%s\n", completion))
 
 		// Make sure we have a PAUSE or Answer in our response
 		for _, x := range completionStrings {
@@ -198,7 +199,7 @@ func (s *SailManager) processAgents() error {
 			// Found action to perform
 			if actionMatch {
 
-				zap.L().Info("Action matched", zap.String("action", x))
+				zap.L().Info("update", zap.String("agent", activeAgent.Role), zap.String("data", x))
 
 				toolResponse, toolError := s.runTool(x)
 
@@ -215,7 +216,7 @@ func (s *SailManager) processAgents() error {
 
 			if delegateMatch {
 
-				zap.L().Info("Delegate matched", zap.String("action", x))
+				zap.L().Info("update", zap.String("agent", activeAgent.Role), zap.String("data", x))
 
 				// Find the agent
 				foundAgent, foundAgentTask, foundAgentError := s.findAgent(x)
@@ -238,6 +239,8 @@ func (s *SailManager) processAgents() error {
 
 			if reportMatch {
 
+				zap.L().Info("update", zap.String("agent", activeAgent.Role), zap.String("data", x))
+
 				// Swap over to the manager agent as active
 				activeAgent = s.managerAgent
 
@@ -252,7 +255,7 @@ func (s *SailManager) processAgents() error {
 
 		}
 
-		color.Cyan(activeAgent.Context.PrintHistory())
+		//color.Cyan(activeAgent.Context.PrintHistory())
 
 	}
 
