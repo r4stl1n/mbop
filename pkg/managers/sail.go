@@ -20,6 +20,8 @@ type SailManager struct {
 	task     string
 	agentDir string
 
+	managerAgent *structs.Agent
+
 	agents []*structs.Agent
 	tools  map[string]tools.Tool
 
@@ -109,7 +111,11 @@ func (s *SailManager) loadAgents() error {
 
 		zap.L().Info("found agent", zap.String("file", s.agentDir+"/"+v.Name()), zap.String("name", agent.Role))
 
-		s.agents = append(s.agents, &agent)
+		if agent.IsCaptain {
+			s.managerAgent = &agent
+		} else {
+			s.agents = append(s.agents, &agent)
+		}
 	}
 
 	return nil
@@ -146,14 +152,14 @@ func (s *SailManager) runTool(input string) (string, error) {
 
 func (s *SailManager) processAgents() error {
 
-	activeAgent := s.agents[0]
+	activeAgent := s.managerAgent
 
 	activeAgent.Context.Add(llm.Message{
 		Role:    "user",
 		Content: fmt.Sprintf("%s\n%s", activeAgent.ConstructCaptainPrompt(s.agents), "Current Task: "+s.task),
 	})
 
-	color.Green(fmt.Sprintf("Role: %s\nContent: %s\n\n", activeAgent.Role, activeAgent.Context.Context[0].Content))
+	color.Red(fmt.Sprintf("Role: %s\nContent: %s\n\n", activeAgent.Role, activeAgent.Context.Context[0].Content))
 
 	for i := 0; i < 5; i++ {
 
@@ -180,11 +186,12 @@ func (s *SailManager) processAgents() error {
 
 			actionMatch := s.actionRegex.Match([]byte(x))
 			delegateMatch := s.delegateRegex.Match([]byte(x))
+			reportMatch := s.reportRegex.Match([]byte(x))
 
 			// Check if there is a answer in the response
 			if strings.Contains(completion, "Answer:") {
 				answerSplit := strings.Split(completion, "Answer:")
-				color.Green(fmt.Sprintf("Answer: %s", answerSplit[1]))
+				color.Green(fmt.Sprintf("\n\nAnswer: %s", answerSplit[1]))
 				return nil
 			}
 
@@ -227,6 +234,20 @@ func (s *SailManager) processAgents() error {
 						"Current Task: "+foundAgentTask),
 				})
 
+			}
+
+			if reportMatch {
+
+				// Swap over to the manager agent as active
+				activeAgent = s.managerAgent
+
+				// extract tool and tool name
+				toolSplit := strings.Split(x, ": ")
+
+				activeAgent.Context.Add(llm.Message{
+					Role:    "user",
+					Content: fmt.Sprintf("Observation: %s", toolSplit[1]),
+				})
 			}
 
 		}
