@@ -153,16 +153,17 @@ func (s *SailManager) runTool(input string) (string, error) {
 func (s *SailManager) processAgents() error {
 
 	activeAgent := s.managerAgent
+	previousReport := ""
 
 	activeAgent.Context.Add(llm.Message{
 		Role:    "user",
 		Content: fmt.Sprintf("%s\n%s", activeAgent.ConstructCaptainPrompt(s.agents), "Current Task: "+s.task),
 	})
 
-	//color.Red(fmt.Sprintf("Role: %s\nContent: %s\n\n", activeAgent.Role, activeAgent.Context.Context[0].Content))
+	color.Cyan(fmt.Sprintf("Role: %s\nContent: %s\n\n", activeAgent.Role, activeAgent.Context.Context[0].Content))
 	zap.L().Info("sail process started", zap.String("agent", activeAgent.Role), zap.String("task", s.task))
 
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 10; i++ {
 
 		completion, _, err := s.openaiClient.GetCompletion(activeAgent.Context)
 
@@ -180,14 +181,14 @@ func (s *SailManager) processAgents() error {
 
 		completionStrings := strings.Split(completion, "\n")
 
-		//color.Yellow(fmt.Sprintf("Response:\n%s\n", completion))
+		color.Yellow(fmt.Sprintf("Response:\n%s\n", completion))
 
 		// Make sure we have a PAUSE or Answer in our response
 		for _, x := range completionStrings {
 
 			actionMatch := s.actionRegex.Match([]byte(x))
 			delegateMatch := s.delegateRegex.Match([]byte(x))
-			reportMatch := s.reportRegex.Match([]byte(x))
+			//reportMatch := s.reportRegex.Match([]byte(x))
 
 			// Check if there is a answer in the response
 			if strings.Contains(completion, "Answer:") {
@@ -231,13 +232,14 @@ func (s *SailManager) processAgents() error {
 				// If no context we want to set the initial
 				activeAgent.Context.Add(llm.Message{
 					Role: "user",
-					Content: fmt.Sprintf("%s\n%s", activeAgent.ConstructAgentPrompt(s.tools),
+					Content: fmt.Sprintf("%s\n%s\n\n%s", activeAgent.ConstructAgentPrompt(s.tools),
+						"Relevant Information: "+previousReport,
 						"Current Task: "+foundAgentTask),
 				})
 
 			}
 
-			if reportMatch {
+			if strings.Contains(completion, "Report:") {
 
 				zap.L().Info("update", zap.String("agent", activeAgent.Role), zap.String("data", x))
 
@@ -245,17 +247,19 @@ func (s *SailManager) processAgents() error {
 				activeAgent = s.managerAgent
 
 				// extract tool and tool name
-				toolSplit := strings.Split(x, ": ")
+				reportSplit := strings.Split(completion, "Report:")
+
+				previousReport = reportSplit[1]
 
 				activeAgent.Context.Add(llm.Message{
 					Role:    "user",
-					Content: fmt.Sprintf("Observation: %s", toolSplit[1]),
+					Content: fmt.Sprintf("Observation: %s", reportSplit[1]),
 				})
 			}
 
 		}
 
-		//color.Cyan(activeAgent.Context.PrintHistory())
+		color.Cyan(activeAgent.Context.PrintLatestHistory())
 
 	}
 

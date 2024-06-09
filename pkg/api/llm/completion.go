@@ -32,6 +32,16 @@ func (c *CompletionHistory) PrintHistory() string {
 	return output
 }
 
+func (c *CompletionHistory) PrintLatestHistory() string {
+	output := ""
+
+	x := c.Context[len(c.Context)-1]
+
+	output = output + fmt.Sprintf("Role: %s\nContent: %s\n\n", x.Role, x.Content)
+
+	return output
+}
+
 func (c *CompletionHistory) Add(message Message) {
 	c.Context = append(c.Context, message)
 }
