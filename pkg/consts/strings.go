@@ -1,12 +1,19 @@
 package consts
 
-const FormatMsgStart = `You run in a loop of Thought, Action, PAUSE, Observation.
+const FormatMsgStart = `You run in a loop of Thought, Command, PAUSE, Observation.
 At the end of the loop you output an Answer
 Use Thought to describe your thoughts about the question you have been asked.
-Use Action to run one of the actions available to you - then return PAUSE.
+Use Command to run one of the actions available to you - then return PAUSE.
 Report will be the result of running those actions. 
 
-If no action needs to be taken you may skip the action step you must return the complete Report.
+If no action needs to be taken you may skip the action step you must return the complete Report. In the correct json
+format.
+
+There should be no new lines in the json output.
+
+Report needs to be in the following format:
+
+Command: {"type": "report", "data":"The capital of France is Paris"}
 
 Your available actions are:`
 
@@ -14,16 +21,21 @@ const FormatMsgEnd = `Example session:
 
 Question: What is the capital of France?
 Thought: I should look up France on Wikipedia
-Action: wikipedia: France
+Command: {"type":"action", "tool":"wikipedia", "data": "France"}
 PAUSE
 
-You will be called again with this:
-
+Your action results will be in the following format:
 Observation: France is a country. The capital is Paris.
 
-You then output:
+You then will process the data and output in the following format:
 
-Report: The capital of France is Paris
+Command: {"type": "report", "data":"The capital of France is Paris"}
+
+The last line in your response should always be in the following format. With nothing else added. All data should be 
+included in the single json formatted response.
+
+Command: json response
+
 `
 
 const CaptianMsgStart = `You run in a loop of Thought, Action, PAUSE, Observation.
@@ -33,11 +45,12 @@ Use Delegate to delegate a task to one of the crew members available to you - th
 Result will be the result of the task ran by one of the crew members.
 
 The format for Delegate must be the following:
-Delegate: CrewMember: Task
+Command: {"type": "delegate", "crew":"developer","data":"task to perform"}
+
+There should be no new lines in the json output.
 
 You should prioritize using different crew members to complete portions of task. When a crew member reports you have
-the option to delegate another task or use the report as the answer. Once accepting the answer ensure to include
-the previous observation in the answer response.
+the option to delegate another task or use the report as the answer.
 
 Your available crew members are:`
 
@@ -46,7 +59,8 @@ Example session:
 
 Question: What is the capital of France?
 Thought: I should delegate to a crew member that knows countries 
-Delegate: Developer: Task to perform
+Command: {"type": "delegate", "crew":"developer","data":"task to perform"}
+
 PAUSE
 
 You will be called again with this:
@@ -55,5 +69,10 @@ Observation: France is a country. The capital is Paris.
 
 You then output:
 
-Answer: The capital of France is Paris
+Command: {"type": "answer", "data":"The capital of France is Paris"}
+
+The last line in your response should always be in the following format. With nothing else added. All data should be 
+included in the single json formatted response. Include the full output of your answer and reports.
+
+Command: json response
 `

@@ -40,6 +40,8 @@ func (l *Logger) Init(logFileName string) *Logger {
 
 	logger := zap.Must(cfg.Build())
 
+	logger = logger.WithOptions(zap.AddStacktrace(zap.DPanicLevel))
+
 	zap.ReplaceGlobals(logger)
 
 	return l

@@ -46,6 +46,10 @@ func (c *CompletionHistory) Add(message Message) {
 	c.Context = append(c.Context, message)
 }
 
+func (c *CompletionHistory) RemoveLatest() {
+	c.Context = c.Context[:len(c.Context)-1]
+}
+
 func (c *CompletionHistory) ToCompletionRequest() CompletionRequest {
 	return CompletionRequest{
 		Model:    c.Model,
