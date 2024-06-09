@@ -25,6 +25,7 @@ func (c *CLI) Init() *CLI {
 	c.Context = new(dto.Context).Init(c.RootCmd.Version)
 
 	newCommands := []*cobra.Command{
+		new(commands.Sail).Cmd(c.Context),
 		new(commands.ChatCompletion).Cmd(c.Context),
 		new(commands.RetrieveModels).Cmd(c.Context),
 		new(commands.Quit).Cmd(c.Context),

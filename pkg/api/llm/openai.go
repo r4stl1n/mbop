@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"go.uber.org/zap"
 	"io"
-	"log"
 	"net/http"
 )
 
@@ -33,16 +32,17 @@ func (o *OpenAIAPI) getRequest(url string) (string, error) {
 	var bearer = "Bearer " + o.config.AuthToken
 
 	// Create a new request using http
-	req, err := http.NewRequest("GET", url, nil)
+	req, _ := http.NewRequest("GET", url, nil)
 
 	// add authorization header to the req
 	req.Header.Add("Authorization", bearer)
 
 	// Send req using http Client
 	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Println("Error on response.\n[ERROR] -", err)
+	resp, respError := client.Do(req)
+	if respError != nil {
+		zap.L().Error("failed to get response", zap.String("url", url), zap.Error(respError))
+		return "", respError
 	}
 
 	defer func(Body io.ReadCloser) {
@@ -52,9 +52,11 @@ func (o *OpenAIAPI) getRequest(url string) (string, error) {
 		}
 	}(resp.Body)
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Println("Error while reading the response bytes:", err)
+	body, bodyError := io.ReadAll(resp.Body)
+
+	if bodyError != nil {
+		zap.L().Error("failed to read the response bytes:", zap.Error(bodyError))
+		return "", bodyError
 	}
 
 	return string(body), nil
@@ -72,16 +74,17 @@ func (o *OpenAIAPI) postRequest(url string, data interface{}) (string, error) {
 	}
 
 	// Create a new request using http
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(marshall))
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(marshall))
 
 	// add authorization header to the req
 	req.Header.Add("Authorization", bearer)
 
 	// Send req using http Client
 	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Println("Error on response.\n[ERROR] -", err)
+	resp, respError := client.Do(req)
+	if respError != nil {
+		zap.L().Error("failed to get response", zap.String("url", url), zap.Error(respError))
+		return "", respError
 	}
 
 	defer func(Body io.ReadCloser) {
@@ -91,9 +94,10 @@ func (o *OpenAIAPI) postRequest(url string, data interface{}) (string, error) {
 		}
 	}(resp.Body)
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Println("Error while reading the response bytes:", err)
+	body, bodyError := io.ReadAll(resp.Body)
+	if bodyError != nil {
+		zap.L().Error("failed to read the response bytes:", zap.Error(bodyError))
+		return "", bodyError
 	}
 
 	return string(body), nil
@@ -124,7 +128,7 @@ func (o *OpenAIAPI) GetModels() (Models, error) {
 	return models, nil
 }
 
-func (o *OpenAIAPI) GetCompletion(completion Completion) (string, CompletionResponse, error) {
+func (o *OpenAIAPI) GetCompletion(completion CompletionHistory) (string, CompletionResponse, error) {
 	url := o.config.BaseUrl + "/chat/completions"
 
 	response, responseError := o.postRequest(url, completion.ToCompletionRequest())

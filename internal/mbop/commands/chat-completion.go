@@ -56,10 +56,14 @@ func (c *ChatCompletion) Run(_ *cobra.Command, _ []string) {
 
 	zap.L().Info("attempting to get completion", zap.String("model", c.model), zap.String("query", c.query))
 
-	chatCompletion, _, completionError := openaiClient.GetCompletion(llm.Completion{
-		Model:        c.model,
-		SystemPrompt: "You are a helpful assistant.",
-		UserPrompt:   c.query,
+	chatCompletion, _, completionError := openaiClient.GetCompletion(llm.CompletionHistory{
+		Model: c.model,
+		Context: []llm.Message{
+			{
+				Role:    "user",
+				Content: c.query,
+			},
+		},
 	})
 
 	if completionError != nil {

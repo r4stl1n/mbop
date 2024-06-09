@@ -1,24 +1,45 @@
 package llm
 
-type Completion struct {
-	Model        string
-	SystemPrompt string
-	UserPrompt   string
+import "fmt"
+
+type CompletionHistory struct {
+	Model   string
+	Context []Message
 }
 
-func (c Completion) ToCompletionRequest() CompletionRequest {
+func (c *CompletionHistory) Init(model string) *CompletionHistory {
+
+	*c = CompletionHistory{
+		Model:   model,
+		Context: []Message{},
+	}
+
+	c.Add(Message{
+		Role:    "system",
+		Content: "",
+	})
+
+	return c
+}
+
+func (c *CompletionHistory) PrintHistory() string {
+	output := ""
+
+	for _, x := range c.Context {
+		output = output + fmt.Sprintf("Role: %s\nContent: %s\n\n", x.Role, x.Content)
+	}
+
+	return output
+}
+
+func (c *CompletionHistory) Add(message Message) {
+	c.Context = append(c.Context, message)
+}
+
+func (c *CompletionHistory) ToCompletionRequest() CompletionRequest {
 	return CompletionRequest{
-		Model: c.Model,
-		Messages: []Message{
-			{
-				Role:    "system",
-				Content: c.SystemPrompt,
-			},
-			{
-				Role:    "user",
-				Content: c.UserPrompt,
-			},
-		},
+		Model:    c.Model,
+		Messages: c.Context,
 	}
 }
 
