@@ -54,6 +54,7 @@ func (c *CompletionHistory) ToCompletionRequest() CompletionRequest {
 	return CompletionRequest{
 		Model:    c.Model,
 		Messages: c.Context,
+		Length:   8192,
 	}
 }
 
@@ -78,6 +79,7 @@ type Usage struct {
 type CompletionRequest struct {
 	Model    string    `json:"model"`
 	Messages []Message `json:"messages"`
+	Length   int       `json:"max_tokens"`
 }
 
 type CompletionResponse struct {

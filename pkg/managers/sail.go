@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/fatih/color"
 	"github.com/r4stl1n/mbop/pkg/api/llm"
+	"github.com/r4stl1n/mbop/pkg/consts"
 	"github.com/r4stl1n/mbop/pkg/structs"
 	"github.com/r4stl1n/mbop/pkg/tools"
 	"github.com/r4stl1n/mbop/pkg/tools/wiki"
@@ -157,10 +158,10 @@ func (s *SailManager) processAgents() error {
 		Content: fmt.Sprintf("%s\n%s", activeAgent.ConstructCaptainPrompt(s.agents), "Current Task: "+s.task),
 	})
 
-	//color.Cyan(fmt.Sprintf("Role: %s\nContent: %s\n\n", activeAgent.Role, activeAgent.Context.Context[0].Content))
+	color.Cyan(fmt.Sprintf("Role: %s\nContent: %s\n\n", activeAgent.Role, activeAgent.Context.Context[0].Content))
 	zap.L().Info("sail process started", zap.String("agent", activeAgent.Role), zap.String("task", s.task))
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 20; i++ {
 
 		completion, _, err := s.openaiClient.GetCompletion(activeAgent.Context)
 
@@ -178,14 +179,19 @@ func (s *SailManager) processAgents() error {
 
 		completionStrings := strings.Split(completion, "\n")
 
-		//color.Yellow(fmt.Sprintf("Response:\n%s\n", completion))
+		color.Yellow(fmt.Sprintf("Response:\n%s\n", completion))
 
 		failure := false
-
+		done := false
 		// Make sure we have a PAUSE or Answer in our response
 		for _, x := range completionStrings {
 
-			if failure {
+			if failure || done {
+				break
+			}
+
+			if !strings.Contains(completion, "Command:") {
+				failure = true
 				break
 			}
 
@@ -228,6 +234,8 @@ func (s *SailManager) processAgents() error {
 						Content: fmt.Sprintf("Observation: %s", toolResponse),
 					})
 
+					done = true
+
 				case "delegate":
 					zap.L().Info("delegate", zap.String("agent", activeAgent.Role),
 						zap.String("data", s.utils.EllipticalTruncate(x, s.characterTrim)))
@@ -254,6 +262,8 @@ func (s *SailManager) processAgents() error {
 
 					zap.L().Info("changing", zap.String("agent", activeAgent.Role))
 
+					done = true
+
 				case "report":
 
 					previousAgent := activeAgent
@@ -271,9 +281,12 @@ func (s *SailManager) processAgents() error {
 					zap.L().Info("reporting", zap.String("previousAgent", previousAgent.Role),
 						zap.String("newAgent", activeAgent.Role))
 
+					done = true
+
 				case "answer":
 					color.Green(fmt.Sprintf("\n\nAnswer: %s", command.Data))
 					return nil
+
 				}
 
 			}
@@ -283,12 +296,12 @@ func (s *SailManager) processAgents() error {
 		if failure {
 			activeAgent.Context.Add(llm.Message{
 				Role:    "user",
-				Content: fmt.Sprintf("Your last json command response was not valid please ensure it is in the correct format"),
+				Content: consts.IncorrectFormatMsg,
 			})
 			zap.L().Debug("attempting to query again, desired response format invalid")
 		}
 
-		//color.Cyan(activeAgent.Context.PrintLatestHistory())
+		color.Cyan(activeAgent.Context.PrintLatestHistory())
 
 	}
 
