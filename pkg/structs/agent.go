@@ -32,7 +32,7 @@ func (a *Agent) ConstructCaptainPrompt(agentList []*Agent) string {
 	agentsConv := ConvertAgentArrayToPrompt(agentList)
 
 	systemPrompt := fmt.Sprintf("%s\n%s\nYour personal goal is: %s\n\n"+
-		"%s\n%s\n%s", a.Role, a.Persona, a.Goal, consts.CaptianMsgStart, agentsConv, consts.CaptianMsgEnd)
+		"%s\n%s\n%s", a.Role, a.Persona, a.Goal, consts.CaptainMsgStart, agentsConv, consts.CaptainMsgEnd)
 
 	return systemPrompt
 }

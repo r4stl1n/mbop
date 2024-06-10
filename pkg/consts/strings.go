@@ -38,7 +38,7 @@ Command: json response
 
 `
 
-const CaptianMsgStart = `You run in a loop of Thought, Action, PAUSE, Observation.
+const CaptainMsgStart = `You run in a loop of Thought, Action, PAUSE, Observation.
 At the end of the loop you output an Answer
 Use Thought to describe your thoughts about the question you have been asked.
 Use Delegate to delegate a task to one of the crew members available to you - then return PAUSE.
@@ -54,7 +54,7 @@ the option to delegate another task or use the report as the answer.
 
 Your available crew members are:`
 
-const CaptianMsgEnd = `
+const CaptainMsgEnd = `
 Example session:
 
 Question: What is the capital of France?
