@@ -50,10 +50,8 @@ Result: France is a country. The capital is Paris.
 {"thought":"I have collected the information", "type": "answer", "result":"The capital of France is Paris"}
 PAUSE
 
-Your response should only ever be in json. Do not include anything else. Replace all new lines with \n.
-
-`
+Your response should only ever be in json. Do not include anything else.`
 
 const IncorrectFormatMsg = `Your last json formatted response was not valid please ensure it is in the following format:
 {"thought": "Describe your current thoughts about the task you are given","type": "action","tool": "What tool to use if any","data": "Data to pass with the action"}
-Do not respond with anything other than the JSON formated response. Do not apologize just return the correctly formatted response.`
+Do not include anything else but the json response your job relies on this.`

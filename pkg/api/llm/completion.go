@@ -52,9 +52,10 @@ func (c *CompletionHistory) RemoveLatest() {
 
 func (c *CompletionHistory) ToCompletionRequest() CompletionRequest {
 	return CompletionRequest{
-		Model:    c.Model,
-		Messages: c.Context,
-		Length:   8192,
+		Model:       c.Model,
+		Messages:    c.Context,
+		Length:      8192,
+		Temperature: 0.1,
 	}
 }
 
@@ -77,9 +78,10 @@ type Usage struct {
 }
 
 type CompletionRequest struct {
-	Model    string    `json:"model"`
-	Messages []Message `json:"messages"`
-	Length   int       `json:"max_tokens"`
+	Model       string    `json:"model"`
+	Messages    []Message `json:"messages"`
+	Length      int       `json:"max_tokens"`
+	Temperature float64   `json:"temperature"`
 }
 
 type CompletionResponse struct {
