@@ -168,7 +168,7 @@ func (s *SailManager) processAgents() error {
 		Content: fmt.Sprintf("%s\n%s", activeAgent.ConstructCaptainPrompt(s.agents), "Current Task: "+s.task),
 	})
 
-	color.Cyan(fmt.Sprintf("Role: %s\nContent: %s\n\n", activeAgent.Role, activeAgent.Context.Context[0].Content))
+	//color.Cyan(fmt.Sprintf("Role: %s\nContent: %s\n\n", activeAgent.Role, activeAgent.Context.Context[0].Content))
 	zap.L().Info("sail process started", zap.String("agent", activeAgent.Role), zap.String("task", s.task))
 
 	for i := 0; i < 20; i++ {
@@ -192,7 +192,7 @@ func (s *SailManager) processAgents() error {
 		completion = "{" + before + "}"
 		completion = strings.ReplaceAll(completion, "\n", "\\n")
 
-		color.Yellow(fmt.Sprintf("Response:\n%s\n", completion))
+		//color.Yellow(fmt.Sprintf("Response:\n%s\n", completion))
 		failure := false
 
 		var command structs.CrewResponse
@@ -203,6 +203,8 @@ func (s *SailManager) processAgents() error {
 				s.utils.EllipticalTruncate(completion, s.characterTrim)))
 			failure = true
 		}
+
+		zap.L().Info("update", zap.String("agent", activeAgent.Role), zap.String("thought", command.Thought))
 
 		switch strings.ToLower(command.Type) {
 
@@ -248,8 +250,6 @@ func (s *SailManager) processAgents() error {
 					"Current Task: "+command.Data),
 			})
 
-			zap.L().Info("changing", zap.String("agent", activeAgent.Role))
-
 		case "report":
 
 			previousAgent := activeAgent
@@ -264,8 +264,8 @@ func (s *SailManager) processAgents() error {
 				Content: fmt.Sprintf("Result: %s", command.Response),
 			})
 
-			zap.L().Info("reporting", zap.String("previousAgent", previousAgent.Role),
-				zap.String("newAgent", activeAgent.Role))
+			zap.L().Info("reporting", zap.String("from", previousAgent.Role),
+				zap.String("to", activeAgent.Role))
 
 		case "answer":
 			color.Green(fmt.Sprintf("\nAnswer: \n%s", command.Result))
@@ -283,7 +283,7 @@ func (s *SailManager) processAgents() error {
 			zap.L().Debug("attempting to query again, desired response format invalid")
 		}
 
-		color.Cyan(activeAgent.Context.PrintLatestHistory())
+		//color.Cyan(activeAgent.Context.PrintLatestHistory())
 
 	}
 
