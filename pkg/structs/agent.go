@@ -32,7 +32,7 @@ func (a *Agent) ConstructCaptainPrompt(agentList []*Agent) string {
 	agentsConv := ConvertAgentArrayToPrompt(agentList)
 
 	systemPrompt := fmt.Sprintf("%s\n%s\nYour personal goal is: %s\n\n"+
-		"%s\n%s\n%s", a.Role, a.Persona, a.Goal, consts.CaptainMsgStart, agentsConv, consts.CaptainMsgEnd)
+		"%s\n%s\n\n%s", a.Role, a.Persona, a.Goal, consts.CaptainMsgStart, agentsConv, consts.CaptainMsgEnd)
 
 	return systemPrompt
 }
@@ -42,7 +42,7 @@ func (a *Agent) ConstructAgentPrompt(toolList map[string]tools.Tool) string {
 	toolsConv := tools.ConvertToolArrayToPrompt(toolList)
 
 	systemPrompt := fmt.Sprintf("%s\n%s\nYour personal goal is: %s\n\n"+
-		"%s\n%s\n%s", a.Role, a.Persona, a.Goal, consts.FormatMsgStart, toolsConv, consts.FormatMsgEnd)
+		"%s\n%s\n\n%s", a.Role, a.Persona, a.Goal, consts.FormatMsgStart, toolsConv, consts.FormatMsgEnd)
 
 	return systemPrompt
 }
