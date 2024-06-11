@@ -21,6 +21,7 @@ type SailManager struct {
 	model    string
 	task     string
 	agentDir string
+	debug    bool
 
 	characterTrim int
 	managerAgent  *structs.Agent
@@ -35,7 +36,7 @@ type SailManager struct {
 	utils        *util.Utils
 }
 
-func (s *SailManager) Init(model string, task string, agentDir string) (*SailManager, error) {
+func (s *SailManager) Init(debug bool, model string, task string, agentDir string) (*SailManager, error) {
 
 	openaiClient, openaiClientError := new(llm.OpenAIAPI).Init()
 
@@ -52,6 +53,7 @@ func (s *SailManager) Init(model string, task string, agentDir string) (*SailMan
 	}
 
 	*s = SailManager{
+		debug:         debug,
 		model:         model,
 		task:          task,
 		agentDir:      agentDir,
@@ -168,7 +170,10 @@ func (s *SailManager) processAgents() error {
 		Content: fmt.Sprintf("%s\n%s", activeAgent.ConstructCaptainPrompt(s.agents), "Current Task: "+s.task),
 	})
 
-	//color.Cyan(fmt.Sprintf("Role: %s\nContent: %s\n\n", activeAgent.Role, activeAgent.Context.Context[0].Content))
+	if s.debug {
+		color.Cyan(fmt.Sprintf("Role: %s\nContent: %s\n\n", activeAgent.Role, activeAgent.Context.Context[0].Content))
+	}
+
 	zap.L().Info("sail process started", zap.String("agent", activeAgent.Role), zap.String("task", s.task))
 
 	for i := 0; i < 20; i++ {
@@ -191,9 +196,11 @@ func (s *SailManager) processAgents() error {
 		before, _ := strings.CutSuffix(after, "}")
 		completion = "{" + before + "}"
 		completion = strings.ReplaceAll(completion, "\n", "\\n")
-
-		//color.Yellow(fmt.Sprintf("Response:\n%s\n", completion))
 		failure := false
+
+		if s.debug {
+			color.Yellow(fmt.Sprintf("Response:\n%s\n", completion))
+		}
 
 		var command structs.CrewResponse
 		unmarshallError := json.Unmarshal([]byte(completion), &command)
@@ -283,8 +290,9 @@ func (s *SailManager) processAgents() error {
 			zap.L().Debug("attempting to query again, desired response format invalid")
 		}
 
-		//color.Cyan(activeAgent.Context.PrintLatestHistory())
-
+		if s.debug {
+			color.Cyan(activeAgent.Context.PrintLatestHistory())
+		}
 	}
 
 	return nil

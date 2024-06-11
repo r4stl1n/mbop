@@ -10,6 +10,7 @@ import (
 type Sail struct {
 	ctx *dto.Context
 
+	debug   bool
 	model   string
 	task    string
 	crewDir string
@@ -26,6 +27,7 @@ func (c *Sail) Cmd(ctx *dto.Context) *cobra.Command {
 		Run:     c.Init(ctx).Run,
 	}
 
+	cmd.Flags().BoolVarP(&c.debug, "debug", "d", false, "enable debug logging")
 	cmd.Flags().StringVarP(&c.model, "model", "m", "gpt-3.5-turbo", "model to use for generation")
 	cmd.Flags().StringVarP(&c.task, "task", "t", "", "task to work towards")
 	cmd.Flags().StringVarP(&c.crewDir, "crewDir", "c", "./crew", "directory of the crew definitions")
@@ -42,7 +44,7 @@ func (c *Sail) Init(ctx *dto.Context) *Sail {
 
 func (c *Sail) Run(_ *cobra.Command, _ []string) {
 
-	sailManager, sailManagerError := new(managers.SailManager).Init(c.model, c.task, c.crewDir)
+	sailManager, sailManagerError := new(managers.SailManager).Init(c.debug, c.model, c.task, c.crewDir)
 
 	if sailManagerError != nil {
 		zap.L().Fatal("failed to initialize sail manager", zap.Error(sailManagerError))
