@@ -24,7 +24,7 @@ Observation: France is a country. The capital is Paris.
 {"thought":"The thought about your current answer", type": "report", "response":"The capital of France is Paris"}
 PAUSE
 
-Your response should only ever be in json. Do not include anything else. Replace all new lines with \n.
+Your response should only ever be in correct json. Do not include anything else. Replace all new lines with \n.
 `
 
 const CaptainMsgStart = `You run in a loop of Thought, Command, PAUSE, Result.
@@ -37,6 +37,8 @@ The format for Delegating a task to a crew member must be the following:
 
 The format for answering must be the following:
 {"thought":"Describe your current thoughts about the task you are given", "type": "answer","result":"put the result here"}
+
+Your thought cannot be empty!!!
 
 When returning an answer make sure to include all relevant information in it given to you by your crew members.
 
@@ -52,6 +54,6 @@ PAUSE
 
 Your response should only ever be in json. Do not include anything else.`
 
-const IncorrectFormatMsg = `Your last json formatted response was not valid please ensure it is in the following format:
+const IncorrectFormatMsg = `Your last json formatted response was not valid please ensure it is in the following correct json format:
 {"thought": "Describe your current thoughts about the task you are given","type": "action","tool": "What tool to use if any","data": "Data to pass with the action"}
 Do not include anything else but the json response your job relies on this.`
