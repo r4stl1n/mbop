@@ -38,7 +38,10 @@ func (d DuckDuckGo) Run(values ...string) (string, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", searchURL, nil)
 	if err != nil {
-		zap.L().Error("failed to create request", zap.String("url", searchURL), zap.Error(err))
+		zap.L().Error("http request creation failed", 
+			zap.String("query", query),
+			zap.String("url", searchURL), 
+			zap.Error(err))
 		return "", err
 	}
 
@@ -48,20 +51,25 @@ func (d DuckDuckGo) Run(values ...string) (string, error) {
 	// Send the request
 	resp, err := client.Do(req)
 	if err != nil {
-		zap.L().Error("failed to get response", zap.String("url", searchURL), zap.Error(err))
+		zap.L().Error("http request failed", 
+			zap.String("query", query),
+			zap.String("url", searchURL), 
+			zap.Error(err))
 		return "", err
 	}
 
 	defer func(Body io.ReadCloser) {
 		bodyCloseError := Body.Close()
 		if bodyCloseError != nil {
-			zap.L().Error("failed to close body", zap.Error(bodyCloseError))
+			zap.L().Error("response body close failed", zap.Error(bodyCloseError))
 		}
 	}(resp.Body)
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		zap.L().Error("failed to read the response body", zap.Error(err))
+		zap.L().Error("response body read failed", 
+			zap.String("query", query),
+			zap.Error(err))
 		return "", err
 	}
 
@@ -69,7 +77,9 @@ func (d DuckDuckGo) Run(values ...string) (string, error) {
 	var jsonResponse DuckDuckGoJsonResponse
 	err = json.Unmarshal(body, &jsonResponse)
 	if err != nil {
-		zap.L().Error("failed to parse JSON response", zap.Error(err))
+		zap.L().Error("JSON response parsing failed", 
+			zap.String("query", query),
+			zap.Error(err))
 		return "", err
 	}
 

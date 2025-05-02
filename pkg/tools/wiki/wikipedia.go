@@ -50,21 +50,26 @@ func (w Wikipedia) Run(values ...string) (string, error) {
 	resp, respError := client.Do(req)
 
 	if respError != nil {
-		zap.L().Error("failed to get response", zap.String("url", url), zap.Error(respError))
+		zap.L().Error("wikipedia http request failed", 
+			zap.String("query", values[0]),
+			zap.String("url", url), 
+			zap.Error(respError))
 		return "", respError
 	}
 
 	defer func(Body io.ReadCloser) {
 		bodyCloseError := Body.Close()
 		if bodyCloseError != nil {
-			zap.L().Error("failed to close body", zap.Error(bodyCloseError))
+			zap.L().Error("wikipedia response body close failed", zap.Error(bodyCloseError))
 		}
 	}(resp.Body)
 
 	body, bodyError := io.ReadAll(resp.Body)
 
 	if bodyError != nil {
-		zap.L().Error("failed to read the response bytes:", zap.Error(bodyError))
+		zap.L().Error("wikipedia response body read failed", 
+			zap.String("query", values[0]),
+			zap.Error(bodyError))
 		return "", bodyError
 	}
 
@@ -72,6 +77,9 @@ func (w Wikipedia) Run(values ...string) (string, error) {
 	unmarshallError := json.Unmarshal(body, &response)
 
 	if unmarshallError != nil {
+		zap.L().Error("wikipedia JSON response parsing failed", 
+			zap.String("query", values[0]),
+			zap.Error(unmarshallError))
 		return "", unmarshallError
 	}
 

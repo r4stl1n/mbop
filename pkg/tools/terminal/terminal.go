@@ -50,8 +50,9 @@ func (t Terminal) Run(values ...string) (string, error) {
 	// Execute the command and capture output
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		zap.L().Error("failed to execute command",
+		zap.L().Error("terminal command execution failed",
 			zap.String("command", cmdString),
+			zap.String("output", string(output)),
 			zap.Error(err))
 		return "", fmt.Errorf("command execution failed: %v\nOutput: %s", err, string(output))
 	}

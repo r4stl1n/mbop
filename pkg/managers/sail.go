@@ -107,7 +107,10 @@ func (s *SailManager) loadAgents() error {
 
 		fileData, readFileError := os.ReadFile(s.agentDir + "/" + v.Name())
 		if readFileError != nil {
-			zap.L().Error("failed to read file", zap.String("file", s.agentDir+"/"+v.Name()), zap.Error(readFileError))
+			zap.L().Error("agent file read failed", 
+				zap.String("filename", v.Name()),
+				zap.String("path", s.agentDir), 
+				zap.Error(readFileError))
 			continue
 		}
 
@@ -118,11 +121,17 @@ func (s *SailManager) loadAgents() error {
 		unmarshallError := json.Unmarshal(fileData, &agent)
 
 		if unmarshallError != nil {
-			zap.L().Error("failed to unmarshall json", zap.String("file", s.agentDir+"/"+v.Name()), zap.Error(unmarshallError))
+			zap.L().Error("agent JSON parsing failed", 
+				zap.String("filename", v.Name()),
+				zap.String("path", s.agentDir), 
+				zap.Error(unmarshallError))
 			continue
 		}
 
-		zap.L().Info("found agent", zap.String("file", s.agentDir+"/"+v.Name()), zap.String("name", agent.Role))
+		zap.L().Info("agent loaded", 
+			zap.String("name", agent.Role),
+			zap.String("filename", v.Name()),
+			zap.Bool("isCaptain", agent.IsCaptain))
 
 		if agent.IsCaptain {
 			s.managerAgent = &agent
@@ -152,13 +161,16 @@ func (s *SailManager) findAgent(agentRole string) (*structs.Agent, error) {
 func (s *SailManager) runTool(toolName string, toolData string) (string, error) {
 
 	// Run the specified tool
-	zap.L().Info("attempting to use tool", zap.String("toolName", toolName))
+	zap.L().Info("tool execution started", 
+		zap.String("tool", toolName),
+		zap.String("data", s.utils.EllipticalTruncate(toolData, s.characterTrim)))
 
 	tool, ok := s.tools[toolName]
 
 	if !ok {
 		if !(strings.ToLower(toolName) == "none" || strings.ToLower(toolName) == "nil") {
-			zap.L().Warn("attempt to use unknown tool", zap.String("toolName", toolName))
+			zap.L().Warn("unknown tool requested", 
+				zap.String("tool", toolName))
 		}
 
 		return "no tool output", nil
@@ -167,9 +179,16 @@ func (s *SailManager) runTool(toolName string, toolData string) (string, error) 
 	toolResponse, toolResponseError := tool.Run(toolData)
 
 	if toolResponseError != nil {
+		zap.L().Error("tool execution failed",
+			zap.String("tool", toolName),
+			zap.String("data", s.utils.EllipticalTruncate(toolData, s.characterTrim)),
+			zap.Error(toolResponseError))
 		return "no tool output", toolResponseError
 	}
 
+	zap.L().Info("tool execution completed", 
+		zap.String("tool", toolName),
+		zap.Int("responseLength", len(toolResponse)))
 	return toolResponse, nil
 }
 
@@ -202,26 +221,34 @@ func (s *SailManager) processAgents() error {
 		color.Cyan(fmt.Sprintf("Role: %s\nContent: %s\n\n", activeAgent.Role, activeAgent.Context.Context[0].Content))
 	}
 
-	zap.L().Info("sail process started", zap.String("agent", activeAgent.Role), zap.String("task", s.task))
+	zap.L().Info("sail process started", 
+		zap.String("captain", activeAgent.Role), 
+		zap.String("task", s.task),
+		zap.Int("agentCount", len(s.agents)))
 
 	for i := 0; i < 100; i++ {
-
 		failure := false
 
 		rawCompletion, _, err := s.openaiClient.GetCompletion(activeAgent.Context)
 
 		if err != nil {
+			zap.L().Error("completion request failed", 
+				zap.String("agent", activeAgent.Role),
+				zap.Error(err))
 			return err
 		}
 
 		completion, err := s.extractJSON(rawCompletion)
 
 		if err != nil {
+			zap.L().Debug("JSON extraction failed", 
+				zap.String("agent", activeAgent.Role),
+				zap.String("rawResponse", s.utils.EllipticalTruncate(rawCompletion, s.characterTrim)),
+				zap.Error(err))
 			failure = true
 		}
 
 		if !failure {
-
 			activeAgent.Context.Add(llm.Message{
 				Role:    "assistant",
 				Content: completion,
@@ -235,92 +262,105 @@ func (s *SailManager) processAgents() error {
 			unmarshallError := json.Unmarshal([]byte(completion), &command)
 
 			if unmarshallError != nil {
-				zap.L().Debug("invalid command format received", zap.String("command",
-					s.utils.EllipticalTruncate(completion, s.characterTrim)))
+				zap.L().Debug("command parsing failed", 
+					zap.String("agent", activeAgent.Role),
+					zap.String("completion", s.utils.EllipticalTruncate(completion, s.characterTrim)),
+					zap.Error(unmarshallError))
 				failure = true
 			}
 
-			zap.L().Info("action", zap.String("completion", completion),
-				zap.String("command", command.Thought))
+			if !failure {
+				zap.L().Info("agent thinking", 
+					zap.String("agent", activeAgent.Role), 
+					zap.String("thought", command.Thought))
 
-			zap.L().Info("update", zap.String("agent", activeAgent.Role), zap.String("thought", command.Thought))
+				switch strings.ToLower(command.Type) {
+				case "action":
+					zap.L().Info("agent action", 
+						zap.String("agent", activeAgent.Role),
+						zap.String("tool", command.Tool),
+						zap.String("data", s.utils.EllipticalTruncate(command.Data, s.characterTrim)))
 
-			switch strings.ToLower(command.Type) {
+					toolResponse, toolError := s.runTool(command.Tool, command.Data)
 
-			case "action":
+					if toolError != nil {
+						// Note: detailed error already logged in runTool
+						failure = true
+						break
+					}
 
-				zap.L().Info("action", zap.String("agent", activeAgent.Role),
-					zap.String("data", s.utils.EllipticalTruncate(completion, s.characterTrim)))
+					activeAgent.Context.Add(llm.Message{
+						Role:    "user",
+						Content: fmt.Sprintf("Observation: %s", toolResponse),
+					})
 
-				toolResponse, toolError := s.runTool(command.Tool, command.Data)
+				case "delegate":
+					zap.L().Info("agent delegation", 
+						zap.String("from", activeAgent.Role),
+						zap.String("to", command.Crew),
+						zap.String("task", s.utils.EllipticalTruncate(command.Data, s.characterTrim)))
 
-				if toolError != nil {
-					zap.L().Warn("invalid tool requested", zap.String("tool", command.Tool))
-					failure = true
-					break
+					// Find the agent
+					foundAgent, foundAgentError := s.findAgent(command.Crew)
+
+					if foundAgentError != nil {
+						zap.L().Warn("agent delegation failed", 
+							zap.String("from", activeAgent.Role),
+							zap.String("to", command.Crew),
+							zap.Error(foundAgentError))
+						failure = true
+						break
+					}
+
+					// Make it the active agent
+					activeAgent = foundAgent
+
+					// If no context we want to set the initial
+					activeAgent.Context.Add(llm.Message{
+						Role: "user",
+						Content: fmt.Sprintf("%s\n%s\n\n%s", activeAgent.ConstructAgentPrompt(s.tools),
+							"Relevant Information: "+previousReport,
+							"Current Task: "+command.Data),
+					})
+
+				case "report":
+					previousAgent := activeAgent
+
+					// Swap over to the manager agent as active
+					activeAgent = s.managerAgent
+
+					previousReport = command.Response
+
+					activeAgent.Context.Add(llm.Message{
+						Role:    "user",
+						Content: fmt.Sprintf("Result: %s", command.Response),
+					})
+
+					zap.L().Info("agent reporting", 
+						zap.String("from", previousAgent.Role),
+						zap.String("to", activeAgent.Role),
+						zap.Int("responseLength", len(command.Response)))
+
+				case "answer":
+					zap.L().Info("task completed",
+						zap.String("agent", activeAgent.Role),
+						zap.Int("resultLength", len(command.Result)))
+					color.Green(fmt.Sprintf("\nAnswer: \n%s", command.Result))
+					color.Green(fmt.Sprintf("\nReport: \n%s", previousReport))
+					return nil
 				}
-
-				activeAgent.Context.Add(llm.Message{
-					Role:    "user",
-					Content: fmt.Sprintf("Observation: %s", toolResponse),
-				})
-
-			case "delegate":
-				zap.L().Info("delegate", zap.String("agent", activeAgent.Role),
-					zap.String("data", s.utils.EllipticalTruncate(completion, s.characterTrim)))
-
-				// Find the agent
-				foundAgent, foundAgentError := s.findAgent(command.Crew)
-
-				if foundAgentError != nil {
-					zap.L().Debug("invalid agent requested", zap.String("agent", command.Crew))
-					failure = true
-					break
-				}
-
-				// Make it the active agent
-				activeAgent = foundAgent
-
-				// If no context we want to set the initial
-				activeAgent.Context.Add(llm.Message{
-					Role: "user",
-					Content: fmt.Sprintf("%s\n%s\n\n%s", activeAgent.ConstructAgentPrompt(s.tools),
-						"Relevant Information: "+previousReport,
-						"Current Task: "+command.Data),
-				})
-
-			case "report":
-
-				previousAgent := activeAgent
-
-				// Swap over to the manager agent as active
-				activeAgent = s.managerAgent
-
-				previousReport = command.Response
-
-				activeAgent.Context.Add(llm.Message{
-					Role:    "user",
-					Content: fmt.Sprintf("Result: %s", command.Response),
-				})
-
-				zap.L().Info("reporting", zap.String("from", previousAgent.Role),
-					zap.String("to", activeAgent.Role))
-
-			case "answer":
-				color.Green(fmt.Sprintf("\nAnswer: \n%s", command.Result))
-				color.Green(fmt.Sprintf("\nReport: \n%s", previousReport))
-				return nil
-
 			}
 		}
 
 		// Failed to get valid response
-		if failure == true {
+		if failure {
 			activeAgent.Context.Add(llm.Message{
 				Role:    "user",
 				Content: consts.IncorrectFormatMsg,
 			})
-			zap.L().Debug("attempting to query again, desired response format invalid")
+			zap.L().Debug("retry with format correction", 
+				zap.String("agent", activeAgent.Role),
+				zap.Int("attempt", i+1))
 		}
 
 		if s.debug {

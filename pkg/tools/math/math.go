@@ -36,7 +36,9 @@ func (m Math) Run(values ...string) (string, error) {
 	expression := values[0]
 	result, err := evaluateExpression(expression)
 	if err != nil {
-		zap.L().Error("failed to evaluate expression", zap.String("expression", expression), zap.Error(err))
+		zap.L().Error("math expression evaluation failed", 
+			zap.String("expression", expression), 
+			zap.Error(err))
 		return "", err
 	}
 
