@@ -176,6 +176,8 @@ func (s *SailManager) runTool(toolName string, toolData string) (string, error) 
 		return "no tool output", nil
 	}
 
+	// For backward compatibility, we still call the Run method with the raw toolData
+	// This allows existing tools to continue working without modification
 	toolResponse, toolResponseError := tool.Run(toolData)
 
 	if toolResponseError != nil {
@@ -285,6 +287,10 @@ func (s *SailManager) processAgents() error {
 
 					if toolError != nil {
 						// Note: detailed error already logged in runTool
+						activeAgent.Context.Add(llm.Message{
+							Role:    "user",
+							Content: fmt.Sprintf("Observation: Error executing tool: %s", toolError.Error()),
+						})
 						failure = true
 						break
 					}

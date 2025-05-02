@@ -14,15 +14,34 @@ func TestDuckDuckGo_Name(t *testing.T) {
 
 func TestDuckDuckGo_Example(t *testing.T) {
 	d := DuckDuckGo{}
-	if d.Example() != "duckduckgo: golang tutorial" {
-		t.Errorf("Expected example to be 'duckduckgo: golang tutorial', got '%s'", d.Example())
+	expected := "duckduckgo: golang tutorial\n   or\nduckduckgo: query=\"golang tutorial\" format=json"
+	if d.Example() != expected {
+		t.Errorf("Expected example to be '%s', got '%s'", expected, d.Example())
 	}
 }
 
 func TestDuckDuckGo_Description(t *testing.T) {
 	d := DuckDuckGo{}
-	if !strings.Contains(d.Description(), "Searches DuckDuckGo") {
+	description := d.Description()
+
+	// Check for basic description
+	if !strings.Contains(description, "Searches DuckDuckGo") {
 		t.Errorf("Description should contain 'Searches DuckDuckGo'")
+	}
+
+	// Check for parameter information
+	if !strings.Contains(description, "Parameters:") {
+		t.Errorf("Description should contain parameter information")
+	}
+
+	// Check for required query parameter
+	if !strings.Contains(description, "query (required)") {
+		t.Errorf("Description should mention required query parameter")
+	}
+
+	// Check for optional format parameter
+	if !strings.Contains(description, "format (optional") {
+		t.Errorf("Description should mention optional format parameter")
 	}
 }
 
@@ -63,6 +82,44 @@ func TestDuckDuckGo_Run_ValidQuery(t *testing.T) {
 
 	// Log the result for debugging
 	t.Logf("Search result: %s", result)
+}
+
+func TestDuckDuckGo_Run_NamedParameters(t *testing.T) {
+	d := DuckDuckGo{}
+
+	// Test with named parameters
+	result, err := d.Run("query=golang format=json")
+
+	if err != nil {
+		t.Errorf("Unexpected error for named parameters: %v", err)
+	}
+
+	// Since we're dealing with an external API, we'll just check if we get a non-empty response
+	if result == "" {
+		t.Errorf("Expected non-empty result for named parameters")
+	}
+
+	// Log the result for debugging
+	t.Logf("Search result with named parameters: %s", result)
+}
+
+func TestDuckDuckGo_Run_QuotedParameters(t *testing.T) {
+	d := DuckDuckGo{}
+
+	// Test with quoted parameters
+	result, err := d.Run("query=\"golang tutorial\" format=json")
+
+	if err != nil {
+		t.Errorf("Unexpected error for quoted parameters: %v", err)
+	}
+
+	// Since we're dealing with an external API, we'll just check if we get a non-empty response
+	if result == "" {
+		t.Errorf("Expected non-empty result for quoted parameters")
+	}
+
+	// Log the result for debugging
+	t.Logf("Search result with quoted parameters: %s", result)
 }
 
 func TestDuckDuckGo_CleanHTML(t *testing.T) {

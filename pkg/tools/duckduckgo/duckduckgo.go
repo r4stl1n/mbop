@@ -3,6 +3,7 @@ package duckduckgo
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/r4stl1n/mbop/pkg/tools"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -19,20 +20,34 @@ func (d DuckDuckGo) Name() string {
 }
 
 func (d DuckDuckGo) Example() string {
-	return "duckduckgo: golang tutorial"
+	return "duckduckgo: golang tutorial\n   or\nduckduckgo: query=\"golang tutorial\" format=json"
 }
 
 func (d DuckDuckGo) Description() string {
-	return "Searches DuckDuckGo and returns the top search results"
+	return "Searches DuckDuckGo and returns the top search results. Parameters: query (required), format (optional, default: json)"
 }
 
 func (d DuckDuckGo) Run(values ...string) (string, error) {
 	if len(values) != 1 {
-		return "", fmt.Errorf("expected one argument (search query)")
+		return "", fmt.Errorf("expected one argument (search query or parameters)")
 	}
 
-	query := values[0]
-	searchURL := fmt.Sprintf("https://api.duckduckgo.com/?q=%s&format=json", url.QueryEscape(query))
+	// Parse parameters using the new parameter parsing mechanism
+	params, err := tools.ParseParameters(values[0], "query")
+	if err != nil {
+		return "", fmt.Errorf("failed to parse parameters: %v", err)
+	}
+
+	// Get the query parameter, which is required
+	query, err := tools.GetParameterValue(params, "query", "", true)
+	if err != nil {
+		return "", err
+	}
+
+	// Get optional parameters with default values
+	format, _ := tools.GetParameterValue(params, "format", "json", false)
+
+	searchURL := fmt.Sprintf("https://api.duckduckgo.com/?q=%s&format=%s", url.QueryEscape(query), url.QueryEscape(format))
 
 	// Create a new request
 	client := &http.Client{}
