@@ -1,13 +1,12 @@
-package tools
+package wiki
 
 import (
-	"github.com/r4stl1n/mbop/pkg/tools/wiki"
 	"testing"
 )
 
 func TestAdd(t *testing.T) {
 
-	wikipediaTool := wiki.Wikipedia{}
+	wikipediaTool := Wikipedia{}
 
 	_, responseError := wikipediaTool.Run("dog")
 

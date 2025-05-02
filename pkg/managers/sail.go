@@ -9,6 +9,7 @@ import (
 	"github.com/r4stl1n/mbop/pkg/structs"
 	"github.com/r4stl1n/mbop/pkg/tools"
 	"github.com/r4stl1n/mbop/pkg/tools/directory"
+	"github.com/r4stl1n/mbop/pkg/tools/duckduckgo"
 	"github.com/r4stl1n/mbop/pkg/tools/file"
 	mathtools "github.com/r4stl1n/mbop/pkg/tools/math"
 	"github.com/r4stl1n/mbop/pkg/tools/terminal"
@@ -72,6 +73,7 @@ func (s *SailManager) Init(debug bool, model string, task string, agentDir strin
 			directory.Directory{}.Name(): directory.Directory{},
 			file.File{}.Name():           file.File{},
 			terminal.Terminal{}.Name():   terminal.Terminal{},
+			duckduckgo.DuckDuckGo{}.Name(): duckduckgo.DuckDuckGo{},
 		},
 
 		utils: new(util.Utils).Init(),
