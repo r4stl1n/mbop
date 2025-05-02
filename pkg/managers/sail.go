@@ -11,6 +11,7 @@ import (
 	"github.com/r4stl1n/mbop/pkg/tools/directory"
 	"github.com/r4stl1n/mbop/pkg/tools/file"
 	mathtools "github.com/r4stl1n/mbop/pkg/tools/math"
+	"github.com/r4stl1n/mbop/pkg/tools/terminal"
 	"github.com/r4stl1n/mbop/pkg/tools/wiki"
 	"github.com/r4stl1n/mbop/pkg/util"
 	"go.uber.org/zap"
@@ -70,7 +71,7 @@ func (s *SailManager) Init(debug bool, model string, task string, agentDir strin
 			mathtools.Math{}.Name():      mathtools.Math{},
 			directory.Directory{}.Name(): directory.Directory{},
 			file.File{}.Name():           file.File{},
-			//terminal.Terminal{}.Name(): terminal.Terminal{},
+			terminal.Terminal{}.Name():   terminal.Terminal{},
 		},
 
 		utils: new(util.Utils).Init(),
